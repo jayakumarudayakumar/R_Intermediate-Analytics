@@ -1,0 +1,328 @@
+---
+
+---
+
+<B>
+<FONT SIZE = 4, color = "blue">
+<center><BR>
+M3 ASSIGNMENT - GLM AND LOGISTIC REGRESSION
+<BR>
+<FONT SIZE = 3, color = "black">
+ALY6015: INTERMEDIATE ANALYTICS
+<BR>
+<FONT SIZE = 2.5, color = "black">
+NORTHEASTERN UNIVERSITY
+<BR>
+<FONT SIZE = 2.5, color = "black">
+</B>
+Student - Jayakumar Moris Udayakumar
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Instructor Name: Prof. Zhi (Richard) He
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Date: 17th Mar 2024
+<BR></center></B>
+
+
+<B>
+<FONT SIZE = 2, color = "black">
+Loading Dataset
+</B><BR>
+
+```{r message=FALSE, warning=FALSE}
+
+library(ISLR)
+library(ggplot2)
+library(caret)
+library(stats)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(pROC)
+library(ggpubr)
+library(e1071)
+
+#imported dataset
+attach(College)
+
+head(College)
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+Descriptive Statistics
+</B><BR>
+
+```{r warning=FALSE}
+
+#descriptive statistics
+desc_sum <- summarytools::descr(College)
+
+#plotting graph
+kable(round(desc_sum, digits = 2), table.attr = "style='width:40%'",align="c", format="html", digits = 2) %>%
+  kable_styling(bootstrap_options="bordered", latex_options = "striped", font_size = NULL)
+
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+Exploratory Data Analysis
+</B><BR>
+
+```{r }
+
+#EDA
+#Histogram
+hist(College$Outstate, xlab = "Outstate", ylab = "Frequency", main = "Histogram - Outstate", col = "skyblue")
+
+#mean and median
+mean_outstate = round(mean(College$Outstate), 2)
+median_outstate = round(median(College$Outstate), 2)
+
+#Adding mean and median lines
+abline(v = mean_outstate, col = "blue", lty = 2)
+abline(v = median_outstate, col = "red", lty = 2)
+
+#Adding labels for mean and median lines
+text(x=mean_outstate, y=25, round(mean_outstate,2), srt=90, cex=0.8, adj = c(0.001,1))
+text(x=median_outstate, y=25, round(median_outstate,2), srt=90, cex=0.8, adj = c(0.001,0))
+
+```
+
+
+```{r }
+#boxplot
+# Assuming you have a data frame named College with a column Grad.Rate
+
+# Create a boxplot of Grad.Rate with custom formatting
+# Assuming you have a data frame named College with a column Grad.Rate
+
+private_col_acc <- ggplot(data = College, aes(x = Private, y = Accept, fill = Private)) +
+  geom_boxplot() +
+  guides(fill = "none")
+
+private_col_enrol <- ggplot(data = College, aes(x = Private, y = Enroll, fill = Private)) +
+  geom_boxplot() +
+  guides(fill = "none")
+
+grid.arrange(private_col_acc, private_col_enrol, nrow = 1)
+
+```
+<B>
+<BR>
+<FONT SIZE = 2, color = "black">
+Splitting and Partitioning Dataset - Train and Test
+</B><BR>
+
+```{r }
+
+#Partitioning the dataset into Train and Test
+set.seed(20353)
+Train_car_index <- createDataPartition(College$Private, p = 0.75, list = FALSE, times = 1)
+sample_train_car = College[Train_car_index,]
+sample_test_car = College[-Train_car_index,]
+
+head(sample_train_car)
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+Generalized Linear Model - Training - All features as Predictors
+</B><BR>
+
+```{r warning=FALSE}
+
+#glm model 1
+glm_col_model1 = glm(Private ~., data = sample_train_car, family = binomial(link = "logit"))
+summary(glm_col_model1)
+
+#to show regression coef in log-odds
+coef(glm_col_model1)
+
+#to show regression coef in odds
+exp(coef(glm_col_model1))
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+Generalized Linear Model - Training - Three Predictors
+</B><BR>
+
+```{r }
+
+glm_col_model2 = glm(Private ~ Accept + Enroll + Grad.Rate, data = sample_train_car, family = binomial(link = "logit"))
+summary(glm_col_model2)
+
+#to show regression coef in log-odds
+coef(glm_col_model2)
+
+#to show regression coef in odds
+exp(coef(glm_col_model2))
+
+#The odds of Private increase by a factor of 0.997 for every 1 unit increase in Enroll
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+Confusion Matrix - Training dataset
+</B><BR>
+
+```{r}
+
+#Training set predictions
+prob.train = predict(glm_col_model2, newdata = sample_train_car, type = "response")
+predicted.classes.min.train <- as.factor(ifelse(prob.train >= 0.5, "Yes", "No"))
+
+#Confusion Matrix - training dataset
+conf_matrix_tr = confusionMatrix(sample_train_car$Private, predicted.classes.min.train, positive = 'Yes')
+
+# Print the confusion matrix
+print(conf_matrix_tr)
+
+#Metrics Table - training dataset
+# Calculate metrics
+accuracy <- conf_matrix_tr$overall['Accuracy']
+precision <- conf_matrix_tr$byClass['Pos Pred Value']
+recall <- conf_matrix_tr$byClass['Sensitivity']      
+specificity <- conf_matrix_tr$byClass['Specificity']
+f1_score <- 2 * (precision * recall) / (precision + recall) 
+beta <- 2  
+f2_score <- ((1 + beta^2) * precision * recall) / ((beta^2 * precision) + recall)
+
+# Create a data frame to store the metrics
+metrics_df <- data.frame(
+  Metric = c("Accuracy", "Precision", "Recall (Sensitivity)", "Specificity", "F1 Score", "F2 Score"),
+  Value = c(accuracy, precision, recall, specificity, f1_score, f2_score)
+)
+
+# Print the formatted table
+kable(metrics_df, format = "html", digits = 3) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = "basic", table.envir = "table", latex_options = "basic", position = "center")
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+Confusion Matrix - Test dataset
+</B><BR>
+
+```{r}
+
+#Confusion Matrix - test dataset
+#Test set predictions
+prob.test = predict(glm_col_model2, newdata = sample_test_car, type = "response")
+predicted.classes.min.test <- as.factor(ifelse(prob.test >= 0.5, "Yes", "No"))
+
+#Confusion Matrix - training dataset
+conf_matrix_te = confusionMatrix(sample_test_car$Private, predicted.classes.min.test, positive = 'Yes')
+
+# Print the confusion matrix
+print(conf_matrix_te)
+
+#Metrics Table - training dataset
+# Calculate metrics
+accuracy_test <- conf_matrix_te$overall['Accuracy']
+precision_test <- conf_matrix_te$byClass['Pos Pred Value']
+recall_test <- conf_matrix_te$byClass['Sensitivity']      
+specificity_test <- conf_matrix_te$byClass['Specificity']
+f1_score_test <- 2 * (precision_test * recall_test) / (precision_test + recall_test) 
+beta <- 2
+f2_score_test <- ((1 + beta^2) * precision_test * recall_test) / ((beta^2 * precision_test) + recall_test)
+
+# Create a data frame to store the metrics
+metrics_df_test <- data.frame(
+  Metric = c("Accuracy", "Precision", "Recall (Sensitivity)", "Specificity", "F1 Score", "F2 Score"),
+  Value = c(accuracy_test, precision_test, recall_test, specificity_test, f1_score_test, f2_score_test)
+)
+
+# Print the formatted table
+kable(metrics_df_test, format = "html", digits = 3) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = "basic", table.envir = "table", latex_options = "basic", position = "center")
+
+
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+GLM (Test) - Receiver Operator Characteristics Curve (ROC)
+</B><BR>
+
+```{r warning=FALSE}
+
+# Calculate ROC curve
+roc_curve <- roc(as.factor(sample_test_car$Private), as.numeric(predicted.classes.min.test == "Yes"))
+
+# Create ROC plot with AUC
+ggroc(roc_curve) +
+  ggtitle("ROC Curve - Test Dataset") +
+  geom_abline(slope = 1, intercept = 1, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  annotate("text", x = 0.125, y = 0.125, label = paste("AUC =", round(auc(roc_curve), 2)), size = 3)
+
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+Support Vecor Machine (SVM) - Test 
+</B><BR>
+
+```{r}
+
+# Train the SVM model
+svm_model_train <- svm(Private ~ Accept + Enroll + Grad.Rate, data = sample_train_car, kernel = "radial")
+
+# Summary of the SVM model
+summary(svm_model_train)
+
+# Assuming 'sample_test_car' is your test dataset
+predict_svm_test <- predict(svm_model_train, newdata = sample_test_car)
+
+# Create confusion matrix
+conf_matrix_svm_test <- table(predict_svm_test, sample_test_car$Private)
+
+# Print confusion matrix
+print(conf_matrix_svm_test)
+
+# Calculate metrics
+TP <- conf_matrix_svm_test[2, 2]
+TN <- conf_matrix_svm_test[1, 1]
+FP <- conf_matrix_svm_test[2, 1]
+FN <- conf_matrix_svm_test[1, 2]
+
+Accuracy_svm <- (TP + TN) / sum(conf_matrix_svm_test)
+Precision_svm <- TP / (TP + FP)
+Recall_svm <- TP / (TP + FN)
+Specificity_svm <- TN / (TN + FP)
+F1_score_svm <- 2 * Precision_svm * Recall_svm / (Precision_svm + Recall_svm)
+F2_score_svm <- (1 + 2^2) * Precision_svm * Recall_svm / ((2^2 * Precision_svm) + Recall_svm)
+
+# Create a data frame for metrics
+metrics_df_Svm <- data.frame(
+  Metric = c("Accuracy", "Precision", "Recall", "Specificity", "F1 Score", "F2 Score"),
+  Value = c(Accuracy_svm, Precision_svm, Recall_svm, Specificity_svm, F1_score_svm, F2_score_svm)
+)
+
+# Print metrics table
+print(metrics_df)
+
+
+```
+```{r warning=FALSE}
+
+# Calculate ROC curve
+roc_curve_svm <- roc(as.factor(sample_test_car$Private), as.numeric(predict_svm_test == "Yes"))
+
+# Create ROC plot with AUC
+ggroc(roc_curve_svm) +
+  ggtitle("ROC Curve - Test Dataset") +
+  geom_abline(slope = 1, intercept = 1, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  annotate("text", x = 0.125, y = 0.125, label = paste("AUC =", round(auc(roc_curve_svm), 2)), size = 3)
+
+
+```
+

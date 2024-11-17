@@ -1,0 +1,286 @@
+---
+
+---
+
+<B>
+<FONT SIZE = 4, color = "blue">
+<center><BR>
+M4 ASSIGNMENT - REGULARIZATION
+<BR>
+<FONT SIZE = 3, color = "black">
+ALY6015: INTERMEDIATE ANALYTICS
+<BR>
+<FONT SIZE = 2.5, color = "black">
+NORTHEASTERN UNIVERSITY
+<BR>
+<FONT SIZE = 2.5, color = "black">
+</B>
+Student - Jayakumar Moris Udayakumar
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Instructor Name: Prof. Zhi (Richard) He
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Date: 18th Mar 2024
+<BR></center></B>
+
+<B>
+<FONT SIZE = 2, color = "black">
+LOADING DATASET
+</B><BR>
+
+```{r message=FALSE,warning=FALSE}
+
+#importing libraries
+library(ISLR)
+library(glmnet)
+library(Matrix)
+library(caret)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+
+#loading dataset
+col_dataset <- College
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+DATA PARTITION
+</B><BR>
+
+```{r data partition}
+
+#setting random seed
+set.seed(20353)
+
+#partitioning dataset into train and test
+train_col_ds <- createDataPartition(col_dataset$S.F.Ratio, p = 0.75, list = FALSE, times = 1)
+train_col_split = col_dataset[train_col_ds,]
+test_col_split = col_dataset[-train_col_ds,]
+
+#creating matrix excluding 'S.F.Ratio'
+train_matrix_excP = model.matrix(S.F.Ratio ~., train_col_split)[,-15]
+test_matrix_excP = model.matrix(S.F.Ratio ~., test_col_split)[,-15]
+
+#creating object just for categorical variable 'S.F.Ratio'
+train_S.F.Ratio = as.numeric(train_col_split$S.F.Ratio)
+test_S.F.Ratio = as.numeric(test_col_split$S.F.Ratio)
+
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+RIDGE REGRESSION
+</B><BR>
+
+<B>Cross Validation</B>
+
+```{r}
+
+set.seed(20353)
+
+# Perform cross-validation to find the best lambda for Ridge
+cv.ridge <- cv.glmnet(train_matrix_excP,train_S.F.Ratio, nfolds = 10, alpha = 0)
+
+# plot cross validation
+plot(cv.ridge)
+
+print(paste("lambda Min:", round(cv.ridge$lambda.min, 3), "; lambda 1se:", round(cv.ridge$lambda.1se, 3)))
+
+```
+
+<B>Ridge Regression - Model fit</B>
+
+```{r}
+
+#Fit the final Ridge model using the best lambda
+ridgemodel_fit <- glmnet(x = train_matrix_excP, y = train_S.F.Ratio, alpha = 0, lambda = cv.ridge$lambda.min)
+
+#prediction of ridge model fit using test set
+predict.ridge.test <- predict(ridgemodel_fit, newx = test_matrix_excP)
+
+#prediction of ridge model fit using train set
+predict.ridge.train <- predict(ridgemodel_fit, newx = train_matrix_excP)
+
+#rmse train
+Ridge_RMSE_train <- RMSE(train_S.F.Ratio, predict.ridge.train)
+
+#rmse test 
+Ridge_RMSE_test <- RMSE(test_S.F.Ratio, predict.ridge.test)
+
+# Create a data frame with lambda Min and lambda 1se values
+RSME_ridge <- data.frame(
+  Model = "Ridge",
+  Train = round(Ridge_RMSE_train, 4),
+  Test = round(Ridge_RMSE_test, 4)
+)
+
+# Print the data frame
+kable(RSME_ridge, align = "c", caption = "Ridge RSME Values Train and Test") %>%
+  kable_styling(bootstrap_options = "bordered")
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+LASSO REGRESSION
+</B><BR>
+
+<B>Cross Validation</B>
+
+```{r}
+
+set.seed(20353)
+
+# Perform cross-validation to find the best lambda for Ridge
+cv.lassoreg <- cv.glmnet(train_matrix_excP,train_S.F.Ratio, nfolds = 10, alpha = 1)
+
+# plot cross validation
+plot(cv.lassoreg)
+
+print(paste("lambda Min:", round(cv.lassoreg$lambda.min, 3), "; lambda 1se:", round(cv.lassoreg$lambda.1se, 3)))
+
+```
+<B>Lasso Regression - Model fit</B>
+
+```{r}
+
+#Fit the laso model using the best lambda
+lassomodel_fit <- glmnet(x = train_matrix_excP, y = train_S.F.Ratio, alpha = 1, lambda = cv.lassoreg$lambda.min)
+
+#prediction of ridge model fit using test set
+predict.lasso.test <- predict(lassomodel_fit, newx = test_matrix_excP)
+
+#prediction of ridge model fit using train set
+predict.lasso.train <- predict(lassomodel_fit, newx = train_matrix_excP)
+
+#rmse train
+lasso_RMSE_train <- RMSE(train_S.F.Ratio, predict.lasso.train)
+
+#rmse test 
+lasso_RMSE_test <- RMSE(test_S.F.Ratio, predict.lasso.test)
+
+
+# Create a data frame with lambda Min and lambda 1se values
+RSME_lasso <- data.frame(
+  Model = "Lasso",
+  Train = round(lasso_RMSE_train, 4),
+  Test = round(lasso_RMSE_test, 4)
+)
+
+# Print the data frame
+kable(RSME_lasso, align = "c", caption = "Lasso RSME Values Train and Test") %>%
+  kable_styling(bootstrap_options = "bordered")
+
+
+```
+<B>
+<FONT SIZE = 2, color = "black">
+ELASTINET REGRESSION
+</B><BR>
+
+<B>Cross Validation</B>
+
+```{r}
+
+set.seed(20353)
+
+# Perform cross-validation to find the best lambda for Ridge
+cv.elastreg <- cv.glmnet(train_matrix_excP,train_S.F.Ratio, nfolds = 10, alpha = 0.5)
+
+# plot cross validation
+plot(cv.elastreg)
+
+print(paste("lambda Min:", round(cv.elastreg$lambda.min, 3), "; lambda 1se:", round(cv.elastreg$lambda.1se, 3)))
+
+```
+
+<B>Elastinet Regression - Model fit</B>
+
+```{r}
+
+#Fit the laso model using the best lambda
+elastmodel_fit <- glmnet(x = train_matrix_excP, y = train_S.F.Ratio, alpha = 0.5, lambda = cv.elastreg$lambda.min)
+
+#prediction of ridge model fit using train set
+predict.elast.train <- predict(elastmodel_fit, newx = train_matrix_excP)
+
+#prediction of ridge model fit using test set
+predict.elast.test <- predict(elastmodel_fit, newx = test_matrix_excP)
+
+#rmse train
+Elast_RMSE_train <- RMSE(train_S.F.Ratio, predict.elast.train)
+
+#rmse test 
+Elast_RMSE_test <- RMSE(test_S.F.Ratio, predict.elast.test)
+
+
+# Create a data frame with lambda Min and lambda 1se values
+RSME_Elastinet <- data.frame(
+  Model = "Elastinet",
+  Train = round(Elast_RMSE_train, 4),
+  Test = round(Elast_RMSE_test, 4)
+)
+
+
+#presenting table
+kable(RSME_Elastinet, align = "c", caption = "Elastinet RSME Values Train and Test") %>%
+  kable_styling(bootstrap_options = "bordered")
+
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+STEPWISE SELECTION
+</B><BR>
+
+```{r }
+
+glm_step <- step(glm(S.F.Ratio ~ ., data = train_col_split), direction = 'both', trace = 0)
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+#prediction of ridge model fit using test set
+predict.glmstep.test <- predict(glm_step, newx = test_col_split)
+
+#prediction of ridge model fit using train set
+predict.glmstep.train <- predict(glm_step, newx = train_col_split)
+
+#rmse train
+glm_RMSE_train <- RMSE(train_S.F.Ratio, predict.glmstep.train)
+
+#rmse test 
+glm_RMSE_test <- RMSE(test_S.F.Ratio, predict.glmstep.test)
+
+
+# Create a data frame with lambda Min and lambda 1se values
+RSME_GLM <- data.frame(
+  Model = "Stepwise Selection - GLM",
+  Train = round(glm_RMSE_train, 4),
+  Test = round(glm_RMSE_test, 4)
+)
+
+# Print the data frame
+kable(RSME_GLM, align = "c", caption = "GLM RSME Values Train and Test") %>%
+  kable_styling(bootstrap_options = "bordered")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+# Combine RMSE tables into one
+combined_table <- bind_rows(RSME_ridge, RSME_lasso, RSME_Elastinet, RSME_GLM)
+
+# Print combined table
+combined_table %>%
+  kable(align = "c", caption = "Combined RMSE Values Train and Test", cex=0.5) %>%
+  kableExtra::kable_styling(bootstrap_options = "bordered")
+
+```
+

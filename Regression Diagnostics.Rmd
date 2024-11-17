@@ -1,0 +1,234 @@
+---
+---
+
+```{r libraryData, message=FALSE, warning=FALSE}
+
+library(readr)
+library(tidyverse)
+library(kableExtra)
+library(corrplot)
+library(RColorBrewer)
+library(car)
+library(leaps)
+library(scales)
+
+# Load the data
+ameshousing_data <- read_csv("~/NEU Grad docs/ALY6015/Indiv Assignment/Assignment 1/AmesHousing.csv")
+
+```
+
+```{r}
+#descriptive statistics
+ameshdata_descsummary <- summarytools::descr(ameshousing_data)
+
+#plotting graph
+kable(round(ameshdata_descsummary, digits = 2), table.attr = "style='width:50%'",align="c", format="html", digits = 3) %>%
+  kable_styling(bootstrap_options="bordered", latex_options = "striped", font_size = NULL)
+
+```
+
+
+```{r}
+#checking missing values
+misvalues <- ameshousing_data %>%
+  summarise_all(~sum(is.na(.)) / n() * 100) %>%
+  gather() %>%
+  arrange(desc(value))
+
+#selecting variables with missing values over 10%
+var_misvalues_overten <- misvalues %>%
+  filter(value > 10)
+
+#renaming the columns
+var_misvalues_overten_rename = var_misvalues_overten %>%
+    reframe(Features = key,
+              Percentage = value)
+
+#printing the features that has more than 10 missing values
+kable(var_misvalues_overten_rename, table.attr = "style='width:50%'",align="c", format="html", digits = 2) %>%
+  kable_styling(bootstrap_options="bordered", latex_options = "striped", font_size = NULL)
+
+#replacing missing values using mean value through impute function
+ameshousing_data_imputed <- ameshousing_data %>%
+  mutate_at(vars(var_misvalues_overten_rename$Features), 
+            ~if(is.numeric(.)) 
+              {
+              ifelse(is.na(.), 
+              mean(., na.rm = TRUE), .)
+              } 
+              else 
+              {
+                .
+              })
+```
+
+
+```{r message=FALSE, warning=FALSE}
+
+#calculating correlation
+numeric_ameshousing_data <- ameshousing_data %>% select_if(is.numeric)
+
+correlation_ameshousing <- cor(numeric_ameshousing_data, use = 'pairwise')
+
+corrplot(correlation_ameshousing, type = 'upper', col = brewer.pal(n = 8, name = "RdYlGn"), tl.cex = 0.7)
+
+#calculating correlation matrix
+correlation_matrix <- cor(numeric_ameshousing_data)
+
+#printing correlation matrix 
+kable(correlation_matrix, table.attr = "style='width:50%'",align="c", format="html", digits = 2) %>%
+  kable_styling(bootstrap_options="bordered", latex_options = "striped", font_size = NULL)
+
+
+```
+```{r}
+
+#using par function to present two graphs in columns
+par(mfrow = c(2, 2), mai = c(0.3, 0.3, 0.3, 0.3), mar = c(0.5, 0.5, 1, 1))
+
+#Plot 1: Overall Qual vs. Sale Price
+ggplot(ameshousing_data_imputed, aes(x = `Overall Qual`, y = SalePrice)) +
+  geom_point() +  
+  labs(x = "Overall Quality", y = "Sale Price") + 
+  theme_minimal() +  
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::dollar)
+
+#Plot 2: Misc Val vs. Sale Price
+ggplot(ameshousing_data_imputed, aes(x = `Misc Val`, y = SalePrice)) +
+  geom_point() +  
+  labs(x = "Misc Val", y = "Sale Price") + 
+  theme_minimal() +  
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::dollar)
+
+#Plot 3: Year Remod/Add vs. Sale Price
+ggplot(ameshousing_data_imputed, aes(x = `Year Remod/Add`, y = SalePrice)) +
+  geom_point() +  
+  labs(x = "Year Remod/Add", y = "Sale Price") + 
+  theme_minimal() +  
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::dollar)
+
+
+```
+
+
+```{r}
+
+#Constructing the formula using paste()
+formula <- paste("SalePrice ~ `Overall Qual` + `Misc Val` + `Year Remod/Add` + `Mo Sold`")
+
+#Fitting the linear regression model
+fit <- lm(formula, data = ameshousing_data_imputed)
+
+#generating summary
+summary_fit <- summary(fit)
+
+#round numeric values
+summary_fit$sigma <- round(summary_fit$sigma, digits = 2)
+summary_fit$coefficients <- round(summary_fit$coefficients, digits = 2)
+
+#print the rounded summary
+print(summary_fit)
+```
+
+
+```{r}
+
+par(mfrow = c(2,2))
+
+#Setting options to suppress scientific notation
+options(scipen = 999)
+
+#plotting the linear regression model
+plot_fit <- plot(fit)
+
+
+```
+
+
+```{r}
+
+#multicollinearity test
+vif(fit)
+
+```
+
+
+```{r}
+
+# Perform outlier test
+outlierTest(model = fit)
+
+```
+
+
+```{r}
+
+#Identifying outliers
+outlier_results <- outlierTest(model = fit)
+
+#extracting studentized residuals and row indices of outliers
+student_resid <- outlier_results$rstudent
+outlier_indices <- which(abs(student_resid) > 2)
+
+#removing outliers from the dataset
+ameshousing_data_filtered <- ameshousing_data_imputed[-outlier_indices, ]
+
+#fitting the model again with the filtered dataset
+fit_filtered <- lm(formula, data = ameshousing_data_filtered)
+
+#printing summary of the new model
+summary(fit_filtered)
+
+```
+
+
+```{r}
+
+#subset regression method
+leaps <- regsubsets(SalePrice ~ `Overall Qual` + `Misc Val` + `Year Remod/Add` + `Mo Sold`, data = ameshousing_data_filtered, nbest = 4)
+plot(leaps, scale = "adjr2")
+
+#extracting summary of all subsets
+summary_all <- summary(leaps)
+
+#printing summary
+summary_all
+
+```
+
+
+```{r}
+
+#reassessing outlier test again
+
+# Step 1: Identify outliers
+outlier_indices <- which(abs(fit$residuals / sd(fit$residuals)) > 2)
+
+# Step 2: Remove outliers from the dataset
+data_no_outliers <- ameshousing_data_imputed[-outlier_indices, ]
+
+# Step 3: Refit the linear regression model with the updated dataset
+fit_no_outliers <- lm(formula, data = data_no_outliers)
+
+summary(fit_no_outliers)
+```
+
+
+```{r}
+
+#fitting the linear regression model again
+
+# Fit the linear regression model using the preferred predictors
+preferred_model_formula <- SalePrice ~ `Overall Qual` + `Misc Val` + `Year Remod/Add` + `Mo Sold`
+preferred_model <- lm(preferred_model_formula, data = data_no_outliers)
+
+# Obtain summary of the preferred model
+summary(preferred_model)
+
+```
+
+```
+

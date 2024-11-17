@@ -1,0 +1,447 @@
+---
+---
+
+<B>
+<FONT SIZE = 4, color = "blue">
+<center><BR>
+M5 ASSIGNMENT - Nonparametric Statistical Methods and Sampling
+<BR>
+<FONT SIZE = 3, color = "black">
+ALY6015: INTERMEDIATE ANALYTICS
+<BR>
+<FONT SIZE = 2.5, color = "black">
+NORTHEASTERN UNIVERSITY
+<BR>
+<FONT SIZE = 2.5, color = "black">
+</B>
+Student - Jayakumar Moris Udayakumar
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Instructor Name: Prof. Zhi (Richard) He
+<BR>
+<FONT SIZE = 2.5, color = "black">
+Date: 24th Mar 2024
+<BR></center></B>
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 13-2: Traditional Hypothesis Testing
+</B><BR>
+
+Game Attendance
+
+```{r }
+
+#H0: median  = 3000
+#H1: median != 3000
+
+#data given
+attendance = c(6210,3150,2700,3012,4875,3540,6127,2581,2642,2573,2792,2800,2500,3700,6030,5437,2758,3490,2851,2720)
+alpha = 0.05
+n1 = length(attendance)
+game_med0 = 3000
+
+#sample median
+samplmed_game = median(attendance)
+
+#std error
+stderr_game = sd(attendance) / sqrt(n1)
+
+#test value
+t_stat_game = (samplmed_game - game_med0) / stderr_game
+
+# Print the test value
+cat("Test value:", t_stat_game)
+
+#critical value
+CVleft_game = qt((alpha/2), 19)
+CVright_game = qt((1-alpha/2), 19)
+
+cat("Critical value (left-tailed):", CVleft_game, "\n")
+cat("Critical value (right-tailed):", CVright_game)
+
+#Compare the absolute test statistic with the critical values
+if (abs(t_stat_game) > CVright_game || abs(t_stat_game) < CVleft_game) {
+  print("Reject null hypothesis: Population median is not equal to 3000")
+} else {
+  print("Fail to reject null hypothesis: There is no sufficient evidence to prove median is not equal to 3000")
+}
+
+```
+
+Lottery Ticket Sales
+
+```{r}
+
+#H0: median = 200
+#H1: median < 200
+
+#data given
+alpha = 0.05
+n2 = 40
+
+n_over200 = 25
+n_less200 = 15
+
+# Number of days sold fewer than 200 tickets
+teststat_tickets <- binom.test(x = c(n_over200, n_less200), alternative = "greater")
+
+testvalue_tickets <- teststat_tickets$statistic
+
+# Print the test value
+cat("Test value:", testvalue_tickets, "; ")
+
+# Find critical value
+cv_tkts <- qbinom(alpha, n2, 0.5)
+
+# Print the critical value
+cat("Critical value:", cv_tkts)
+
+#Compare the absolute test statistic with the critical values
+if (testvalue_tickets <= cv_tkts) {
+  print("; Reject null hypothesis: median is less than 200")
+} else {
+  print("Fail to reject null hypothesis: There is no sufficient evidence to prove median is less than 200")
+}
+
+```
+
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 13-3: Wilcoxon rank sum test
+</B><BR>
+
+Lengths of Prison Sentences
+
+```{r warning=FALSE}
+
+#H0: There is no difference in the sentence received by each gender
+#H1: There is a difference in the sentence received by each gender
+
+alpha = 0.05
+
+male_gen <- c(8, 12, 6, 14, 22, 27, 32, 24, 26, 19, 15, 13)
+female_gen <- c(7, 5, 2, 3, 21, 26, 30, 9, 4, 17, 23, 12, 11, 16)
+
+# Perform two-sample t-test
+wilcoxranksum_test_result <- wilcox.test(male_gen, female_gen, alternative = "two.sided")
+
+# Get test statistic (t-value)
+W_value_gen <- wilcoxranksum_test_result$statistic
+
+# Print the test value
+cat("Test value:", W_value_gen, "; ")
+
+
+# Determine sample sizes
+n_mal <- length(male_gen)
+n_fem <- length(female_gen)
+
+#critical value for a two-tailed test - Wilcoxon Rank Sum Table
+cv_gend <- 123
+
+# Print the critical value
+cat("Critical value:", cv_gend)
+
+# Make decision
+if (W_value_gen >= cv_gend) {
+  cat("; Reject the null hypothesis: There is a difference in the sentence received by each gender\n")
+} else {
+  cat("; ", "Fail to reject the null hypothesis: There is no sufficient evidence to prove that there is a difference in the sentence received by each gender\n")
+}
+```
+
+Winning Baseball Games
+
+```{r warning=FALSE}
+
+#H0: There is no difference in the number of wins by NL and AL
+#H1: There is a difference in the number of wins by NL and AL
+
+alpha = 0.05
+
+nat_leg = c(89, 96, 88, 101, 90, 91, 92, 96, 108, 100, 95)
+amer_leg = c(108, 86, 91, 97, 100, 102, 95, 104, 95, 89, 88, 101)
+
+#Perform two-sample t-test
+w_test_baseball <- wilcox.test(nat_leg, amer_leg, alternative = "two.sided")
+
+# Get test statistic (t-value)
+wtestvalue_bb <- w_test_baseball$statistic
+
+# Print the test value
+cat("Test value:", wtestvalue_bb, "; ")
+
+# Determine sample sizes
+n_NL <- length(nat_leg)
+n_AL <- length(amer_leg)
+
+#critical value for a two-tailed test - Wilcoxon Rank Sum Table
+cv_league <- 99
+
+# Print the critical value
+cat("Critical value:", cv_league)
+
+# Make decision
+if (abs(wtestvalue_bb) >= abs(cv_league)) {
+  cat("; Reject the null hypothesis: There is a difference in the number of wins by NL and AL.\n")
+} else {
+  cat("; Fail to reject the null hypothesis: There is no sufficient evidence to prove that there is a difference in the number of wins by NL and AL\n")
+}
+
+```
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 13-4: Table K based problem-solving
+</B><BR>
+
+```{r}
+
+#q5_two-tailed
+ws5 = 13
+n5 = 15
+alpha5 = 0.01
+table_k5 = 16
+
+#q6_one-tailed
+ws6 = 32
+n6 = 28
+alpha6 = 0.025
+table_k6 = 117
+
+#q7_one-tailed
+ws7 = 65
+n7 = 20
+alpha7 = 0.05
+table_k7 = 60
+
+#q8_two-tailed
+ws8 = 22
+n8 = 14
+alpha8 = 0.10
+table_k8 = 26
+
+if (ws5 <= table_k5) 
+{cat("Q5: Reject the null hypothesis\n")} else {cat("Q5: Fail to reject the null hypothesis\n")}
+if (ws6 <= table_k6) 
+{cat("Q6: Reject the null hypothesis\n")} else {cat("Q6: Fail to reject the null hypothesis\n")}
+if (ws7 <= table_k7) 
+{cat("Q7: Reject the null hypothesis\n")} else {cat("Q7: Fail to reject the null hypothesis\n")}
+if (ws8 <= table_k8) 
+{cat("Q8: Reject the null hypothesis\n")} else {cat("Q8: Fail to reject the null hypothesis\n")}
+
+```
+
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 13-5: Kruskal-Wallis test
+</B><BR>
+
+Mathematics Literacy Scores
+
+```{r}
+
+#H0: No difference in means between the selected countries/regions
+#H1: There is a significant difference in means between the selected countries/regions
+
+alpha = 0.05
+
+west_hemis = c(527, 406, 474, 381, 411)
+europe_reg = c(520, 510, 513, 548, 496)
+eastern_asia = c(523, 547, 547, 391, 549)
+
+# Perform Kruskal-Wallis test
+kruskaltest_mathlit <- kruskal.test(list(west_hemis, europe_reg, eastern_asia))
+
+# Get the test statistic
+kruskaltestvalue_mathlit <- kruskaltest_mathlit$statistic
+
+# Print the test value
+cat("Test value:", kruskaltestvalue_mathlit, "; ")
+
+#degrees of freedom
+df_math <- length(list(west_hemis, europe_reg, eastern_asia)) - 1
+
+#critical value
+cv_mathlit <- qchisq(1 - alpha, df_math)
+
+# Print the critical value
+cat("Critical value:", cv_mathlit)
+
+# Compare test statistic with critical value
+if (kruskaltestvalue_mathlit > cv_mathlit) {
+  print("Reject null hypothesis: There is a significant difference in means between the selected countries/regions.")
+} else {
+  print("Fail to reject null hypothesis: No difference in means between the selected countries/regions.")
+}
+
+```
+
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 13-6: Spearman rank correlation coefficient
+</B><BR>
+
+Subway and Commuter Rail Passengers
+
+```{r}
+
+#H0: There is no relationship between the variables
+#H1: There is a relationship between the variables
+
+city <- c(1, 2, 3, 4, 5, 6)
+sub <- c(845, 494, 425, 313, 108, 41)
+com_rail <- c(39, 291, 142, 103, 33, 38)
+
+
+#spearman correlation coef
+spearman_cor <- cor(sub, com_rail, method = "spearman")
+
+# Print spearman correlation coef
+cat("spearman correlation coef value:", spearman_cor, "; ")
+
+#critical value as per Spearman rank correlation coefficient table
+criticalvalue_pgrs = 0.886
+
+# Print the critical value
+cat("Critical value:", criticalvalue_pgrs)
+
+# Make decision
+if (abs(spearman_cor) > abs(criticalvalue_pgrs)) {
+  cat("Reject the null hypothesis: There is a difference in the number of wins by NL and AL.\n")
+} else {
+  cat("; ", "Fail to reject the null hypothesis: There is no sufficient evidence to prove that there is a difference in the number of wins by NL and AL\n")
+}
+
+```
+
+
+<B>
+<FONT SIZE = 2, color = "black">
+Section 14-3: Random Number Simulation: Seed 20353
+</B><BR>
+
+Rolling a Die
+```{r}
+
+# Set the random seed for reproducibility
+set.seed(20353)
+
+# Function to simulate rolling a die until all faces are seen
+roll_dice_until_all_faces_seen <- function() {
+  seen <- c()
+  rolls <- 0
+  while (length(unique(seen)) < 6) {
+    roll <- sample(1:6, 1, replace = TRUE)
+    seen <- c(seen, roll)
+    rolls <- rolls + 1
+  }
+  return(rolls)
+}
+
+# Simulate the experiment 1000 times
+num_rolls <- replicate(1000, roll_dice_until_all_faces_seen())
+
+# Calculate the experimental average
+experimental_avg <- round(mean(num_rolls), 1)
+
+# Calculate the theoretical average using the harmonic number
+theoretical_avg <- 6 * 2.45
+
+# Print the results
+cat("Experimental average number of tosses:", experimental_avg, "\n")
+cat("Theoretical average number of tosses:", round(theoretical_avg, 1))
+
+```
+
+
+Clay Pigeon Shooting
+
+Task 1
+
+```{r}
+
+# Set random seed
+set.seed(20353)
+
+# Define function to simulate a round of shooting
+simulate_shooting <- function() {
+  bob_hits <- FALSE
+  alice_hits <- FALSE
+  
+  # Alice shoots first
+  if (runif(1) <= 0.6) {
+    alice_hits <- TRUE
+  } else {
+    # Bob shoots if Alice misses
+    if (runif(1) <= 0.8) {
+      bob_hits <- TRUE
+    }
+  }
+  
+  # Determine winner
+  if (alice_hits) {
+    return("Alice")
+  } else if (bob_hits) {
+    return("Bob")
+  } else {
+    return("Draw")
+  }
+}
+
+# Simulate 5000 rounds of shooting
+results <- replicate(5000, simulate_shooting())
+
+# Calculate experimental probabilities
+experimental_prob_alice_wins <- mean(results == "Alice")
+experimental_prob_bob_wins <- mean(results == "Bob")
+
+# Calculate theoretical probabilities
+theoretical_prob_alice_wins <- 0.6  # Alice wins if she hits on the first shot
+theoretical_prob_bob_wins <- 0.4 * 0.8  # Bob wins if Alice misses (0.4) and then Bob hits (0.8)
+
+# Print results
+cat("Experimental probability of Alice winning:", round(100 * experimental_prob_alice_wins), "%\n")
+cat("Experimental probability of Bob winning:", round(100 * experimental_prob_bob_wins), "%\n\n")
+
+cat("Theoretical probability of Alice winning:", round(100 * theoretical_prob_alice_wins, 2), "%\n")
+cat("Theoretical probability of Bob winning:", round(100 * theoretical_prob_bob_wins, 2), "%\n")
+
+
+
+```
+Task 2
+
+```{r}
+
+# Define function to simulate shooting until a winner is determined and return the number of shots fired
+simulate_shots_fired <- function() {
+  shots_fired <- 0
+  
+  while (TRUE) {
+    shots_fired <- shots_fired + 1
+    
+    if (runif(1) <= 0.6) {  # Alice hits
+      return(shots_fired)
+    } else if (runif(1) <= 0.8) {  # Bob hits
+      return(shots_fired)
+    }
+  }
+}
+
+# Simulate 5000 rounds of shooting and store the number of shots fired in each round
+shots_fired <- replicate(5000, simulate_shots_fired())
+
+# Calculate average number of shots fired
+average_shots_fired <- mean(shots_fired)
+
+# Print result
+cat("Average number of shots fired:", round(average_shots_fired, 2))
+
+
+```
+

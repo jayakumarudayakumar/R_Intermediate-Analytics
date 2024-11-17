@@ -1,0 +1,546 @@
+---
+
+---
+
+```{r include=TRUE, message=FALSE}
+
+library(readxl)
+library(DescTools)
+library(tidyverse)
+library(kableExtra)
+library(RColorBrewer)
+library(ggplot2)
+library(stats)
+
+```
+
+
+```{r }
+#Section 11-1 - Blood Types
+
+#Null hypothesis - Patients in a hospital have same blood distribution as those in the general population
+#Alternate hypothesis - Blood distribution between patients in a hospital and general population is not the same
+
+#creating vector
+gen_population = c(0.20, 0.28, 0.36, 0.16)
+hospital_patients = c(12, 8, 24, 6)
+alpha_bt = 0.1
+alpha_bt_2 = alpha_bt/2
+n1 = 4
+df1 = n1 - 1
+
+#finding critical values
+left_CV_bt = round(qchisq(alpha_bt_2, df1), 2)
+right_CV_bt = round(qchisq(1-alpha_bt_2, df1), 2)
+print(paste(left_CV_bt, "Lower Critical Value"))
+print(paste(right_CV_bt, "Upper Critical Value"))
+
+
+#finding test values
+chisq_bloodtest = chisq.test(x = hospital_patients, p = gen_population, correct = FALSE)
+chisq_bloodtest
+
+#decision
+if(chisq_bloodtest$statistic < right_CV_bt & chisq_bloodtest$statistic > left_CV_bt)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(chisq_bloodtest$p.value > alpha_bt_2)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+```
+
+
+```{r }
+#Section 11-1 - On-Time Performance by Airlines
+
+#Null Hypothesis - Survey and Government statistics are the same
+#Alternate Hypothesis - Survey and Government statistics results differ from each other
+
+#creating vector and objects
+gov_stat = c(0.708, 0.082, 0.09, 0.12)
+sur_sample = c(125, 10, 25, 40)
+alpha_otpair = 0.05
+alpha_otpair_2 = alpha_otpair/2
+n2 = 4
+df2 = n2 - 1
+
+#finding critical values
+left_CV_otpair = round(qchisq(alpha_otpair_2, df2), 2)
+right_CV_otpair = round(qchisq(1-alpha_otpair_2, df2), 2)
+print(paste(left_CV_otpair, "Left Critical Value"))
+print(paste(right_CV_otpair, "Right Critical Value"))
+
+#finding test values
+chisq_otpair = chisq.test(x = sur_sample, p = gov_stat)
+chisq_otpair
+
+#decision
+if(chisq_otpair$statistic < right_CV_bt & chisq_otpair$statistic > left_CV_bt)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(chisq_otpair$p.value > alpha_otpair_2)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+```
+
+
+```{r }
+
+#Section 11-2 - Ethnicity and Movie Admissions
+
+#Null hypothesis - movie admissions by year independent of ethnicity
+#Alternate hypothesis - movie admissions by year dependent upon ethnicity
+
+#creating vector and objects
+adm_2013 = c(724, 335, 174, 107)
+adm_2014 = c(370, 292, 152, 140)
+alpha_adm = 0.05
+alpha_adm_2 = alpha_adm/2
+n3 = 4
+df3 = n3-1
+
+#finding critical value
+left_CV_adm = round(qchisq(alpha_adm_2, df3), 2)
+right_CV_adm = round(qchisq(1-alpha_adm_2, df3), 2)
+print(paste(left_CV_adm, "Left Critical Value"))
+print(paste(right_CV_adm, "Right Critical Value"))
+
+
+#creating matrix
+adm_matrix = matrix(c(adm_2013, adm_2014), nrow = 2, byrow = TRUE)
+
+#finding test value
+chisqtest_adm = chisq.test(adm_matrix)
+chisqtest_adm
+
+#decision
+if(chisqtest_adm$statistic < right_CV_adm)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(chisqtest_adm$p.value > alpha_adm_2)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+```
+
+
+```{r }
+
+#Section 11-2 Women in the Military
+
+#Null hypothesis - Rank and Branch of Armed forces independent to each other
+#Alternate hypothesis - Relationship exists between Rank and Branch of Armed forces
+
+#Creating vector and objects
+military_off = c(10791, 7816, 932, 11819)
+military_enl = c(62491, 42750, 9525, 54344)
+alpha_mil = 0.05
+alpha_mil_2 = alpha_mil/2
+n4 = 4
+df4 = n4 - 1
+
+#finding critical value
+left_CV_mil = round(qchisq(alpha_mil_2, df4), 2)
+right_CV_mil = round(qchisq(1-alpha_mil_2, df4), 2)
+print(paste(left_CV_mil, "Left Critical Value"))
+print(paste(right_CV_mil, "Right Critical Value"))
+
+#creating matrix
+military_mat = matrix(c(military_off, military_enl), nrow = 2, byrow = TRUE)
+
+#finding test value
+chisqtest_military = chisq.test(military_mat)
+chisqtest_military
+
+#decision
+if(chisqtest_military$statistic < right_CV_mil)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(chisqtest_military$p.value > alpha_mil_2)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+```
+
+
+
+```{r }
+#Section 12-1: Sodium Contents of foods - ANOVA
+#Null Hypothesis: Mean of Sodium content in all three different kinds of foods are the same
+#Alternate Hypothesis: Mean of Sodium content in at least two of the three different kinds of foods differ from one another
+
+alpha_food = 0.05
+
+# Sample sizes for each group
+condiments <- c(270, 130, 230, 180, 80, 70, 200)
+cereals <- c(260, 220, 290, 290, 200, 320, 140)
+desserts <- c(100, 180, 250, 250, 300, 360, 300, 160)
+
+# Combine the sample sizes into a list
+sample_sizes <- list(condiments, cereals, desserts)
+
+mean_cond = mean(condiments)
+mean_cer = mean(cereals)
+mean_des = mean(desserts)
+
+print(mean_cond)
+print(mean_cer)
+print(mean_des)
+
+# Degrees of freedom for groups and residuals
+df_groups <- length(sample_sizes) - 1
+df_residuals <- sum(sapply(sample_sizes, length)) - length(sample_sizes)
+
+# Calculate critical value
+critical_value <- qf(1 - alpha_food, df_groups, df_residuals)
+
+# Print the critical value
+print(critical_value)
+
+
+# Perform ANOVA test
+anova_result <- aov(Sodium ~ Group, data = data.frame(Sodium = unlist(sample_sizes), Group = factor(rep(c("Condiments", "Cereals", "Desserts"), sapply(sample_sizes, length)))))
+
+# Print ANOVA summary
+print(summary(anova_result))
+
+# Extract p-value from ANOVA result
+p_value_sodium <- summary(anova_result)[[1]]$`Pr(>F)`[1]
+
+# Extract F-value from ANOVA result
+f_statistic_sodium <- summary(anova_result)[[1]]$`F value`[1]
+
+
+#decision
+if(f_statistic_sodium < right_CV_mil)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+
+if(p_value_sodium > alpha_food)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+```
+
+
+```{r }
+#Section 12-2: Sales for leading Companies - One-Way ANOVA
+
+#Null Hypothesis: Mean Sales for a year of a sample of leading companies are the same
+#Alternate Hypothesis: Atleast one of the leading companies' mean sales differ from others
+
+alpha_sales = 0.01
+
+# Sample sizes for each group
+cereal <- c(578, 320, 264, 249, 237)
+chocolate_candy <- c(311, 106, 109, 125, 173)
+coffee <- c(261, 185, 302, 689)
+
+# Combine the sample sizes into a list
+sales_samplesize <- list(cereal, chocolate_candy, coffee)
+
+mean_cereal = mean(cereal)
+mean_choc = mean(chocolate_candy)
+mean_cof = mean(coffee)
+
+print(mean_cereal)
+print(mean_choc)
+print(mean_cof)
+
+# Degrees of freedom for groups and residuals
+df_groupsales <- length(sales_samplesize) - 1
+df_residualssales <- sum(sapply(sales_samplesize, length)) - length(sales_samplesize)
+
+# Calculate critical value
+sales_CV <- qf(1 - alpha_sales, df_groupsales, df_residualssales)
+
+# Print the critical value
+print(sales_CV)
+
+# Perform ANOVA test
+anovatest_salesresult <- aov(Sales ~ Companies, data = data.frame(Sales = unlist(sales_samplesize), Companies = factor(rep(c("cereal", "chocolate_Candy", "coffee"), sapply(sales_samplesize, length)))))
+
+# Print ANOVA summary
+print(summary(anovatest_salesresult))
+
+# Extract F-statistic
+f_statistic_sales <- summary(anovatest_salesresult)[[1]]$`F value`[1]
+
+# Extract p-value from ANOVA result
+p_value_sales <- summary(anovatest_salesresult)[[1]]$`Pr(>F)`[1]
+
+#decision
+if(f_statistic_sodium < right_CV_mil)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+
+if(p_value_sales > alpha_sales)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+TukeyHSD(anovatest_salesresult)
+```
+
+
+```{r }
+#Section 12-2: 12 - Per-Pupil Expenditures
+
+#Null Hypothesis: There is no difference in means of per-pupil expenditures of the three different regions of the country
+#Alternate Hypothesis: There are differences in atleast one of the means of per-pupil expenditures of the three different regions of the country
+
+alpha_expend = 0.05
+
+# Sample sizes for each group
+east_third <- c(4946, 5953, 6202, 7243, 6113)
+mid_third <- c(6149, 7451, 6000, 6479)
+west_third <- c(5282, 8605, 6528, 6911)
+
+# Combine the sample sizes into a list
+pupilexp_samplesize <- list(east_third, mid_third, west_third)
+
+mean_eastthird = mean(east_third)
+mean_midthird = mean(mid_third)
+mean_westthird = mean(west_third)
+
+print(mean_eastthird)
+print(mean_midthird)
+print(mean_westthird)
+
+# Degrees of freedom for groups and residuals
+df_groupexp <- length(pupilexp_samplesize) - 1
+df_residualsexp <- sum(sapply(pupilexp_samplesize, length)) - length(pupilexp_samplesize)
+
+# Calculate critical value
+exp_CV <- qf(1 - alpha_expend, df_groupexp, df_residualsexp)
+
+# Print the critical value
+print(exp_CV)
+
+# Perform ANOVA test
+anovatest_pupilexp_result <- aov(Expenditure ~ Regions, data = data.frame(Expenditure = unlist(pupilexp_samplesize), Regions = factor(rep(c("Eastern Third", "Middle Third", "Western Third"), sapply(pupilexp_samplesize, length)))))
+
+# Print ANOVA summary
+print(summary(anovatest_pupilexp_result))
+
+# Extract F-statistic from ANOVA test
+f_statistic_exp <- summary(anovatest_pupilexp_result)[[1]]$`F value`[1]
+
+# Extract p-value from ANOVA result
+p_value_expend <- summary(anovatest_pupilexp_result)[[1]]$`Pr(>F)`[1]
+
+#decision
+if(f_statistic_exp < exp_CV)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+
+if(p_value_expend > alpha_expend)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+ScheffeTest(anovatest_pupilexp_result)
+```
+
+
+```{r }
+
+#Section 12-3: 10 - Increasing Plant Growth
+
+#Null Hypothesis
+#H0_food: There is no difference in mean growth with respect to food
+#H0_light: There is no difference in mean growth with respect to light
+#H0_Interaction: There is no interaction effect between food and light on plant growth
+#Alternative Hypotheses
+#H0_food: There is difference in mean growth with respect to food
+#H0_light: There is difference in mean growth with respect to light
+#H0_Interaction: There is interaction effect between food and light on plant growth
+
+# Create a dataframe with the provided data
+plant_growth <- data.frame(
+  Grow_light = c(rep("L1", 3), rep("L2", 3), rep("L1", 3), rep("L2", 3)),
+  Plant_food = c(rep("A", 3), rep("A", 3), rep("B", 3), rep("B", 3)),
+  Growth = c(9.2, 9.4, 8.9, 8.5, 9.2, 8.9, 7.1, 7.2, 8.5, 5.5, 5.8, 7.6)
+)
+
+# Display the dataframe
+plant_growth
+
+# Perform two-way ANOVA
+plant_twowayanova <- aov(Growth ~ Grow_light * Plant_food, data = plant_growth)
+
+# Summary of the ANOVA test
+summary(plant_twowayanova)
+
+alpha_plant = 0.05
+df1 = length(plant_growth$Grow_light)
+df2 = length(plant_growth$Plant_food)
+
+#critical value
+CV_plantg = qf(1 - alpha_plant, df1, df2)
+
+#p_value
+p_value_light = summary(plant_twowayanova)[[1]]$`Pr(>F)`[1]
+p_value_food = summary(plant_twowayanova)[[1]]$`Pr(>F)`[2]
+p_value_light_food = summary(plant_twowayanova)[[1]]$`Pr(>F)`[3]
+
+
+#decision
+if(p_value_light > alpha_plant)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(p_value_food > alpha_plant)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(p_value_light_food > alpha_plant)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+
+```
+
+
+```{r }
+#Section 12-3: Baseball dataset
+
+bball <- read_csv("Datasets/baseball.csv", show_col_types = FALSE)
+
+#EDA
+#descriptive statistics
+bball_desc_stat <- summarytools::descr(bball)
+
+#plotting table
+kable(round(bball_desc_stat, digits = 2), table.attr = "style='width:50%'",align="c", format="html", digits = 3) %>%
+  kable_styling(bootstrap_options="bordered", latex_options = "striped", font_size = NULL)
+
+#eda
+# Group the teams by name and count the frequency of each team
+team_group <- bball %>%
+  group_by(Team)
+
+#Plotting the bar graph
+ggplot(bball, aes(x = Team, fill = factor(bball$Playoffs))) +
+  geom_bar() +
+  labs(title = "Playoff Status by Team",
+       x = "Team",
+       y = "Count",
+       fill = "Playoff Status") +
+  scale_fill_manual(values = c("0" = "red", "1" = "green"), 
+                    labels = c("No", "Yes")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r }
+
+#Extract decade from year
+bball$Decade <- bball$Year - (bball$Year %% 10)
+
+#Create a wins table by summing the wins by decade
+wins <- bball %>%
+group_by(Decade) %>%
+summarize(wins = sum(W)) %>%
+as.tibble()
+
+wins
+
+#Null hypothesis: There is no difference in number of wins by decade
+#Alternate hypothesis: There is a difference in number of wins by decade
+
+alpha_wins = 0.05
+
+#Critical Value for alpha 0.05 with d.f 5 from the book is
+CV_wins = 11.071
+
+#test value
+chisq_test_wins = chisq.test(wins)
+chisq_test_wins
+
+#decision
+if(chisq_test_wins$statistic < CV_wins)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+
+if(chisq_test_wins$p.value > alpha_wins)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+```
+
+
+```{r }
+#import data
+crop <- read_csv("Datasets/crop_data.csv", show_col_types = FALSE)
+
+#Null Hypothesis
+#H0_fertilizer: There is no significant difference in yield between different types of fertilizers.
+#H0_density: There is no significant difference in yield between different density levels.
+#H0_Interaction: There is no interaction effect between fertilizer and density on yield.
+#Alternative Hypotheses
+#HA_fertilizer: There is a significant difference in yield between different types of fertilizers.
+#HA_density: There is a significant difference in yield between different density levels.
+#HA_Interaction: There is an interaction effect between fertilizer and density on yield.
+
+alpha_crop = 0.05
+
+crop$density <- as.factor(crop$density)
+crop$fertilizer <- as.factor(crop$fertilizer)
+crop$block <- as.factor(crop$block)
+
+# Perform two-way ANOVA
+twowayanova_crop <- aov(yield ~ density + fertilizer + density:fertilizer, data = crop)
+
+# Summary of the ANOVA test
+summary(twowayanova_crop)
+
+#p_value
+p_value_density = summary(twowayanova_crop)[[1]]$`Pr(>F)`[1]
+p_value_fertilizer = summary(twowayanova_crop)[[1]]$`Pr(>F)`[2]
+p_value_interaction = summary(twowayanova_crop)[[1]]$`Pr(>F)`[3]
+
+#decision
+if(p_value_density > alpha_crop)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(p_value_fertilizer > alpha_crop)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+if(p_value_interaction > alpha_crop)
+{
+  "We have failed to reject null hypothesis due to lack of evidence"
+} else {"Reject null hypothesis"}
+
+```
+
+
+
